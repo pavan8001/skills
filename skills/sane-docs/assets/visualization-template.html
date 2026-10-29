@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<!-- sane-docs-contract
+title: <Visualization Title>
+doc_type: visualization
+status: active
+sync_commit: <git-short-sha>
+code_paths:
+  - src/<module>/<file>.ext
+symbols:
+  - <PrimarySymbol>
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><Visualization Title> — Behavioral Contract</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-muted: #f1f5f9;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --ok: #15803d;
+      --ok-soft: #dcfce7;
+      --warn: #b45309;
+      --warn-soft: #fef3c7;
+      --err: #b91c1c;
+      --err-soft: #fee2e2;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0f19;
+        --surface: #111827;
+        --surface-muted: #1e293b;
+        --border: #334155;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --accent: #60a5fa;
+        --accent-soft: #1e3a8a;
+        --ok: #4ade80;
+        --ok-soft: #14532d;
+        --warn: #fbbf24;
+        --warn-soft: #78350f;
+        --err: #f87171;
+        --err-soft: #7f1d1d;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    header p {
+      margin: 4px 0 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .meta-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button, select {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface-muted);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    svg.diagram {
+      width: 100%;
+      height: 360px;
+      background: var(--surface-muted);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .node-group { cursor: pointer; }
+    .node-rect {
+      fill: var(--surface);
+      stroke: var(--border);
+      stroke-width: 2px;
+      rx: 6px;
+      transition: stroke 0.15s, fill 0.15s;
+    }
+    .node-group.active .node-rect {
+      stroke: var(--accent);
+      fill: var(--accent-soft);
+      stroke-width: 2.5px;
+    }
+    .node-group.error .node-rect {
+      stroke: var(--err);
+      fill: var(--err-soft);
+    }
+    .node-label {
+      fill: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .node-sub {
+      fill: var(--text-muted);
+      font-family: var(--sans);
+      font-size: 10px;
+      text-anchor: middle;
+    }
+    .edge-path {
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 1.75px;
+    }
+    .edge-path.active {
+      stroke: var(--accent);
+      stroke-width: 2.75px;
+    }
+    .edge-label {
+      fill: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-anchor: middle;
+    }
+    .kv-list {
+      display: grid;
+      gap: 10px;
+      font-size: 0.88rem;
+    }
+    .kv-item {
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .kv-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    code {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      background: var(--surface);
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .step-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1 id="doc-title">Behavioral Flow &amp; State Inspector</h1>
+        <p id="doc-summary">Select a step or click any node to inspect its code anchor, preconditions, state mutations, and failure contract.</p>
+      </div>
+      <div class="meta-badges">
+        <span class="badge" id="badge-path">code_path: src/&lt;module&gt;</span>
+        <span class="badge" id="badge-commit">sync_commit: &lt;git-short-sha&gt;</span>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="panel" aria-label="Interactive Diagram">
+        <div class="panel-header">
+          <h2 class="panel-title">Topology &amp; State Transitions</h2>
+          <div class="controls">
+            <label for="scenario-select" style="font-size:0.82rem;color:var(--text-muted);">Scenario:</label>
+            <select id="scenario-select" aria-label="Select behavioral scenario"></select>
+            <button type="button" id="btn-prev" aria-label="Previous step">Prev</button>
+            <button type="button" id="btn-next" aria-label="Next step">Next</button>
+          </div>
+        </div>
+
+        <svg class="diagram" id="diagram-svg" viewBox="0 0 680 320" role="img" aria-label="System state and component diagram">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="currentColor" />
+            </marker>
+          </defs>
+          <g id="edges-layer"></g>
+          <g id="nodes-layer"></g>
+        </svg>
+
+        <div class="step-bar" id="step-buttons" role="tablist" aria-label="Execution steps"></div>
+      </section>
+
+      <aside class="panel" aria-label="Contract Inspector">
+        <div class="panel-header">
+          <h2 class="panel-title" id="inspector-heading">Step &amp; Node Contract</h2>
+          <span class="badge" id="inspector-status">ACTIVE</span>
+        </div>
+        <div class="kv-list">
+          <div class="kv-item">
+            <div class="kv-label">Code Anchor</div>
+            <div id="inspector-anchor"><code>src/...</code></div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Trigger &amp; Guard Condition</div>
+            <div id="inspector-trigger"></div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Observable Behavior &amp; State Mutation</div>
+            <div id="inspector-behavior"></div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Invariants &amp; Failure Mode</div>
+            <div id="inspector-invariants"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Replace CONTRACT_DATA with the exact nodes, edges, and scenarios from the codebase.
+    const CONTRACT_DATA = {
+      nodes: [
+        { id: "pending", label: "pending", sub: "Job queued", x: 110, y: 90, anchor: "Job (src/scheduler/job.py)" },
+        { id: "leased", label: "leased", sub: "Worker owns Lease", x: 350, y: 90, anchor: "Lease (src/scheduler/lease.py)" },
+        { id: "completed", label: "completed", sub: "Terminal success", x: 570, y: 90, anchor: "Worker.complete()" },
+        { id: "dead_letter", label: "dead_letter", sub: "Terminal exhausted", x: 350, y: 240, anchor: "DeadLetterQueue", isError: true }
+      ],
+      edges: [
+        { id: "e-claim", from: "pending", to: "leased", label: "claim() [attempts < max]" },
+        { id: "e-complete", from: "leased", to: "completed", label: "complete() [owner]" },
+        { id: "e-reap", from: "leased", to: "pending", label: "reap() [expired]" },
+        { id: "e-dlq", from: "pending", to: "dead_letter", label: "claim() [attempts >= max]" }
+      ],
+      scenarios: {
+        "Happy Path: Claim to Complete": [
+          {
+            title: "1. Enqueue Job",
+            activeNode: "pending",
+            activeEdge: null,
+            status: "PENDING",
+            anchor: "Scheduler.enqueue (src/scheduler/job.py)",
+            trigger: "Caller invokes Scheduler.enqueue(payload) with a valid schema.",
+            behavior: "Inserts a Job row with status='pending' and attempts=0.",
+            invariants: "id is a unique UUIDv7. Rejects empty payload with ValueError."
+          },
+          {
+            title: "2. Claim Lease",
+            activeNode: "leased",
+            activeEdge: "e-claim",
+            status: "LEASED",
+            anchor: "Worker.claim (src/scheduler/lease.py)",
+            trigger: "Worker calls claim(job_id) while attempts < max_attempts.",
+            behavior: "Creates a Lease row with lease_expires_at = now() + 30s and sets Job status='leased'.",
+            invariants: "At most one active Lease exists per job_id (enforced by UNIQUE constraint)."
+          },
+          {
+            title: "3. Complete Job",
+            activeNode: "completed",
+            activeEdge: "e-complete",
+            status: "COMPLETED",
+            anchor: "Worker.complete (src/scheduler/lease.py)",
+            trigger: "Worker calls complete(job_id) while caller == lease_owner.",
+            behavior: "Deletes the row from job_leases and sets Job status='completed'.",
+            invariants: "Completed jobs cannot transition back to pending or leased."
+          }
+        ],
+        "Failure Path: Lease Expiry & Exhaustion": [
+          {
+            title: "1. Lease Expires",
+            activeNode: "pending",
+            activeEdge: "e-reap",
+            status: "REQUEUED",
+            anchor: "LeaseReaper.tick (src/scheduler/lease.py)",
+            trigger: "now() > lease_expires_at before Worker calls complete().",
+            behavior: "Deletes expired Lease, increments Job.attempts by 1, and returns Job to 'pending'.",
+            invariants: "Job payload must be idempotent across retries."
+          },
+          {
+            title: "2. Attempts Exhausted -> Dead Letter",
+            activeNode: "dead_letter",
+            activeEdge: "e-dlq",
+            status: "DEAD_LETTER",
+            anchor: "Worker.claim (src/scheduler/lease.py)",
+            trigger: "Worker calls claim(job_id) when attempts >= max_attempts.",
+            behavior: "Moves Job to status='dead_letter' and emits JobExhaustedEvent.",
+            invariants: "Terminal state; requires manual operator replay."
+          }
+        ]
+      }
+    };
+
+    const nodesLayer = document.getElementById("nodes-layer");
+    const edgesLayer = document.getElementById("edges-layer");
+    const scenarioSelect = document.getElementById("scenario-select");
+    const stepButtons = document.getElementById("step-buttons");
+
+    let currentScenario = Object.keys(CONTRACT_DATA.scenarios)[0];
+    let currentStepIndex = 0;
+
+    function nodeById(id) {
+      return CONTRACT_DATA.nodes.find((n) => n.id === id);
+    }
+
+    function renderStaticGraph() {
+      edgesLayer.innerHTML = "";
+      nodesLayer.innerHTML = "";
+
+      CONTRACT_DATA.edges.forEach((edge) => {
+        const from = nodeById(edge.from);
+        const to = nodeById(edge.to);
+        if (!from || !to) return;
+
+        const isReverse = from.x > to.x && from.y === to.y;
+        const midX = (from.x + to.x) / 2;
+        const midY = isReverse ? from.y - 55 : (from.y + to.y) / 2;
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const d = isReverse
+          ? `M ${from.x} ${from.y - 24} Q ${midX} ${midY - 25} ${to.x} ${to.y - 24}`
+          : `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+        path.setAttribute("d", d);
+        path.setAttribute("class", "edge-path");
+        path.setAttribute("id", `edge-${edge.id}`);
+        edgesLayer.appendChild(path);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", String(midX));
+        label.setAttribute("y", String(isReverse ? midY - 16 : midY - 8));
+        label.setAttribute("class", "edge-label");
+        label.textContent = edge.label;
+        edgesLayer.appendChild(label);
+      });
+
+      CONTRACT_DATA.nodes.forEach((node) => {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", `node-group ${node.isError ? "error" : ""}`);
+        g.setAttribute("id", `node-${node.id}`);
+        g.setAttribute("transform", `translate(${node.x - 65}, ${node.y - 26})`);
+
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("width", "130");
+        rect.setAttribute("height", "52");
+        rect.setAttribute("class", "node-rect");
+
+        const title = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        title.setAttribute("x", "65");
+        title.setAttribute("y", "21");
+        title.setAttribute("class", "node-label");
+        title.textContent = node.label;
+
+        const sub = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        sub.setAttribute("x", "65");
+        sub.setAttribute("y", "38");
+        sub.setAttribute("class", "node-sub");
+        sub.textContent = node.sub;
+
+        g.appendChild(rect);
+        g.appendChild(title);
+        g.appendChild(sub);
+        nodesLayer.appendChild(g);
+      });
+    }
+
+    function updateStepView() {
+      const steps = CONTRACT_DATA.scenarios[currentScenario];
+      const step = steps[currentStepIndex];
+
+      document.querySelectorAll(".node-group").forEach((el) => el.classList.remove("active"));
+      document.querySelectorAll(".edge-path").forEach((el) => el.classList.remove("active"));
+
+      if (step.activeNode) {
+        const n = document.getElementById(`node-${step.activeNode}`);
+        if (n) n.classList.add("active");
+      }
+      if (step.activeEdge) {
+        const e = document.getElementById(`edge-${step.activeEdge}`);
+        if (e) e.classList.add("active");
+      }
+
+      document.getElementById("inspector-heading").textContent = step.title;
+      document.getElementById("inspector-status").textContent = step.status;
+      document.getElementById("inspector-anchor").innerHTML = `<code>${step.anchor}</code>`;
+      document.getElementById("inspector-trigger").textContent = step.trigger;
+      document.getElementById("inspector-behavior").textContent = step.behavior;
+      document.getElementById("inspector-invariants").textContent = step.invariants;
+
+      stepButtons.innerHTML = "";
+      steps.forEach((s, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = s.title;
+        if (idx === currentStepIndex) btn.classList.add("active");
+        btn.addEventListener("click", () => {
+          currentStepIndex = idx;
+          updateStepView();
+        });
+        stepButtons.appendChild(btn);
+      });
+    }
+
+    Object.keys(CONTRACT_DATA.scenarios).forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      scenarioSelect.appendChild(opt);
+    });
+
+    scenarioSelect.addEventListener("change", (e) => {
+      currentScenario = e.target.value;
+      currentStepIndex = 0;
+      updateStepView();
+    });
+
+    document.getElementById("btn-prev").addEventListener("click", () => {
+      const steps = CONTRACT_DATA.scenarios[currentScenario];
+      currentStepIndex = (currentStepIndex - 1 + steps.length) % steps.length;
+      updateStepView();
+    });
+
+    document.getElementById("btn-next").addEventListener("click", () => {
+      const steps = CONTRACT_DATA.scenarios[currentScenario];
+      currentStepIndex = (currentStepIndex + 1) % steps.length;
+      updateStepView();
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") document.getElementById("btn-next").click();
+      if (e.key === "ArrowLeft") document.getElementById("btn-prev").click();
+    });
+
+    renderStaticGraph();
+    updateStepView();
+  </script>
+</body>
+</html>
